@@ -9,8 +9,9 @@ export const useTodoStore = create(
   persist(
     (set, get) => ({
       todos: [],
+      projects: [],
 
-      addTodo: (text, dueDate = null, parentId = null) => {
+      addTodo: (text, dueDate = null, parentId = null, projectId = null) => {
         const newTodo = {
           id: generateId(),
           text,
@@ -18,6 +19,7 @@ export const useTodoStore = create(
           createdAt: new Date().toISOString(),
           dueDate,
           parentId,
+          projectId,
           subTask: [],
         };
         set((state) => ({
@@ -45,6 +47,21 @@ export const useTodoStore = create(
       getSubtasks: (id) => {
         return get().todos.filter((todo) => todo.parentId === id);
       },
+      addProject: (name) =>
+        set((state) => ({
+          projects: [...state.projects, { id: Date.now(), name }],
+        })),
+
+      deleteProject: (id) =>
+        set((state) => ({
+          projects: state.projects.filter((p) => p.id !== id),
+          todos: state.todos.filter((t) => t.projectId !== id),
+        })),
+
+      updateProject: (id, newName) =>
+        set((state) => ({
+          projects: state.projects.map((p) => (p.id === id ? { ...p, name: newName } : p)),
+        })),
     }),
     {
       name: 'todo-storage',

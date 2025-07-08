@@ -1,20 +1,17 @@
 'use client';
-import React, { Children } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import NotificationSetup from './NotificationSetup';
 
-function Layout({ children }) {
+export default function Layout({ children, activeProjectName }) {
   return (
     <div>
       <NotificationSetup />
       <Sidebar />
       <div>
-        <Header />
+        <Header activeProjectName={activeProjectName} />
         <main>{children}</main>
       </div>
     </div>
   );
 }
-
-export default Layout;
