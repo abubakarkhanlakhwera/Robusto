@@ -1,70 +1,115 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  updateDoc,
+  onSnapshot,
+} from 'firebase/firestore';
+import { db } from './firebase';
+import { useAuthStore } from './authStore';
 
-const generateId = () => crypto.randomUUID();
+export const useTodoStore = create((set, get) => ({
+  todos: [],
+  projects: [],
 
-export const useTodoStore = create(
-  persist(
-    (set, get) => ({
-      todos: [],
-      projects: [],
+  // 🔁 Real‑time todos
+  fetchTodos: () => {
+    const user = useAuthStore.getState().user;
+    if (!user) return;
+    const q = query(collection(db, 'todos'), where('userId', '==', user.uid));
+    return onSnapshot(q, (snap) => {
+      set({ todos: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    });
+  },
 
-      addTodo: (text, dueDate = null, parentId = null, projectId = null) => {
-        const newTodo = {
-          id: generateId(),
-          text,
-          completed: false,
-          createdAt: new Date().toISOString(),
-          dueDate,
-          parentId,
-          projectId,
-          subTask: [],
-        };
-        set((state) => ({
-          todos: [...state.todos, newTodo],
-        }));
-      },
-      toggleTodo: (id) => {
-        set((state) => ({
-          todos: state.todos.map((todo) =>
-            todo.id === id ? { ...todo, completed: !todo.completed } : todo
-          ),
-        }));
-      },
+  // 🔁 Real‑time projects
+  fetchProjects: () => {
+    const user = useAuthStore.getState().user;
+    if (!user) return;
+    const q = query(collection(db, 'projects'), where('userId', '==', user.uid));
+    return onSnapshot(q, (snap) => {
+      set({ projects: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    });
+  },
 
-      deleteTodo: (id) => {
-        set((state) => ({
-          todos: state.todos.filter((todo) => todo.id !== id && todo.parentId !== id),
-        }));
-      },
-      editTodo: (id, newText) => {
-        set((state) => ({
-          todos: state.todos.map((todo) => (todo.id === id ? { ...todo, text: newText } : todo)),
-        }));
-      },
-      getSubtasks: (id) => {
-        return get().todos.filter((todo) => todo.parentId === id);
-      },
-      addProject: (name) =>
-        set((state) => ({
-          projects: [...state.projects, { id: Date.now(), name }],
-        })),
+  // Todos CRUD
+  addTodo: async (text, dueDate = null, parentId = null, projectId = null) => {
+    const user = useAuthStore.getState().user;
+    if (!user) return;
 
-      deleteProject: (id) =>
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-          todos: state.todos.filter((t) => t.projectId !== id),
-        })),
+    const now = new Date();
 
-      updateProject: (id, newName) =>
-        set((state) => ({
-          projects: state.projects.map((p) => (p.id === id ? { ...p, name: newName } : p)),
-        })),
-    }),
-    {
-      name: 'todo-storage',
+    // Set default dueDate if none is provided (1 hour later)
+    let finalDueDate = dueDate ? new Date(dueDate) : new Date(now.getTime() + 60 * 60 * 1000);
+
+    // Prevent past dueDate
+    if (finalDueDate < now) {
+      alert('Cannot add a todo in the past.');
+      return;
     }
-  )
-);
+    if (!user) return;
+    await addDoc(collection(db, 'todos'), {
+      text,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      dueDate,
+      parentId,
+      projectId,
+      userId: user.uid,
+    });
+  },
+  toggleTodo: async (id) => {
+    const t = get().todos.find((t) => t.id === id);
+    if (!t) return;
+    await updateDoc(doc(db, 'todos', id), { completed: !t.completed });
+  },
+  deleteTodo: async (id) => {
+    await deleteDoc(doc(db, 'todos', id));
+  },
+  editTodo: async (id, newText) => {
+    await updateDoc(doc(db, 'todos', id), { text: newText });
+  },
+  getSubtasks: (id) => get().todos.filter((t) => t.parentId === id),
+
+  // Projects CRUD + favorites + nesting
+  addProject: async (name, color = '#3b82f6', parentId = null) => {
+    const user = useAuthStore.getState().user;
+    if (!user) return;
+
+    // Enforce uniqueness
+    const existing = get().projects.find(
+      (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase()
+    );
+    if (existing) {
+      throw new Error('Project names must be unique');
+    }
+
+    await addDoc(collection(db, 'projects'), {
+      name: name.trim(),
+      color,
+      parentId,
+      isFavorite: false,
+      userId: user.uid,
+      order: Date.now(),
+    });
+  },
+  toggleFavorite: async (projectId) => {
+    const p = get().projects.find((p) => p.id === projectId);
+    if (!p) return;
+    await updateDoc(doc(db, 'projects', projectId), {
+      isFavorite: !p.isFavorite,
+    });
+  },
+  deleteProject: async (id) => {
+    await deleteDoc(doc(db, 'projects', id));
+  },
+  updateProject: async (id, payload) => {
+    await updateDoc(doc(db, 'projects', id), payload);
+  },
+}));

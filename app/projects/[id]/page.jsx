@@ -11,9 +11,8 @@ import { PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline';
 export default function ProjectPage() {
   const { id } = useParams();
   const router = useRouter();
-  const projectId = Number(id);
+  const projectId = id;
 
-  // Zustand stable selectors
   const todos = useTodoStore((s) => s.todos);
   const projects = useTodoStore((s) => s.projects);
   const deleteProject = useTodoStore((s) => s.deleteProject);
@@ -34,8 +33,7 @@ export default function ProjectPage() {
   }
 
   const handleDelete = () => {
-    const confirmed = confirm('Are you sure you want to delete this project?');
-    if (!confirmed) return;
+    if (!confirm('Are you sure you want to delete this project?')) return;
 
     deleteProject(projectId);
     router.push('/projects');
@@ -50,7 +48,7 @@ export default function ProjectPage() {
   return (
     <Layout activeProjectName={project.name}>
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header: Project Title + Edit/Delete */}
+        {/* Project Header */}
         <div className="flex justify-between items-center">
           {editing ? (
             <div className="flex w-full gap-2 items-center">
@@ -78,14 +76,14 @@ export default function ProjectPage() {
           )}
         </div>
 
-        {/* Task List */}
+        {/* Tasks */}
         {projectTodos.length === 0 ? (
           <p className="text-gray-500">No tasks in this project.</p>
         ) : (
           projectTodos.map((todo) => <TaskItem key={todo.id} todo={todo} />)
         )}
 
-        {/* Add Task */}
+        {/* Add Task — validation for past date is handled inside AddTaskForm */}
         <AddTaskForm projectId={projectId} />
       </div>
     </Layout>

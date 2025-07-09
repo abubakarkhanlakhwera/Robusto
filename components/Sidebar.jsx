@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Bars3Icon,
   XMarkIcon,
@@ -13,52 +12,45 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import { useTodoStore } from '@/lib/store';
+import SidebarProject from './SidebarProject';
 
-const navItems = [
+const nav = [
   { label: 'Inbox', icon: InboxIcon, path: '/' },
   { label: 'Today', icon: CalendarIcon, path: '/today' },
   { label: 'This Week', icon: CalendarDaysIcon, path: '/this-week' },
   { label: 'This Month', icon: CalendarDaysIcon, path: '/this-month' },
   { label: 'Upcoming', icon: CalendarIcon, path: '/upcoming' },
-  { label: 'Projects', icon: FolderIcon, path: '/projects' },
 ];
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const sidebarRef = useRef();
-  const [projectName, setProjectName] = useState('');
+  const [name, setName] = useState('');
   const addProject = useTodoStore((s) => s.addProject);
   const projects = useTodoStore((s) => s.projects);
 
-  // Close sidebar if clicked outside
+  const favs = projects.filter((p) => p.isFavorite);
+  const roots = projects.filter((p) => !p.parentId && !p.isFavorite);
+
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+    const handler = (e) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
         setOpen(false);
       }
-    }
-
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
     };
+    if (open) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const handleAddProject = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (!projectName.trim()) return;
-    addProject(projectName.trim());
-    setProjectName('');
+    if (!name.trim()) return;
+    await addProject(name.trim());
+    setName('');
   };
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <div className="lg:hidden flex items-center bg-white px-4 py-2 shadow">
         <button onClick={() => setOpen(!open)}>
           {open ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
@@ -66,53 +58,59 @@ export default function Sidebar() {
         <span className="ml-4 font-semibold">Menu</span>
       </div>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 bg-white shadow-lg p-4 transform ${
+      <nav
+        ref={sidebarRef}
+        className={`fixed top-0 left-0 z-40 h-full w-64 bg-white p-4 shadow-lg transform transition ${
           open ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform lg:translate-x-0 lg:static lg:block`}
+        } lg:translate-x-0 lg:static`}
       >
-        <h2 className="text-xl font-bold mb-6">📘 Todoist Clone</h2>
+        <h2 className="text-xl font-bold mb-6">📘 Robusto</h2>
 
-        {/* Main Nav Links */}
         <ul className="space-y-3 mb-6">
-          {navItems.map(({ label, icon: Icon, path }) => (
-            <Link key={label} href={path}>
-              <li className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 cursor-pointer">
-                <Icon className="h-5 w-5" />
-                <span>{label}</span>
-              </li>
-            </Link>
+          {nav.map(({ label, icon: I, path }) => (
+            <li key={label}>
+              <Link
+                href={path}
+                className="flex items-center gap-2 text-gray-700 hover:text-blue-600"
+              >
+                <I className="w-5 h-5" />
+                {label}
+              </Link>
+            </li>
           ))}
         </ul>
 
-        {/* Projects Section */}
+        {favs.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-yellow-600 mb-1">⭐ Favorites</h3>
+            <ul className="space-y-1">
+              {favs.map((p) => (
+                <SidebarProject key={p.id} project={p} level={0} />
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div>
-          <h3 className="text-sm font-semibold text-gray-600 mb-2">Projects</h3>
-          <ul className="space-y-2 mb-3">
-            {projects.map((project) => (
-              <Link key={project.id} href={`/projects/${project.id}`}>
-                <li className="text-gray-700 hover:text-blue-600 cursor-pointer ml-2 text-sm">
-                  📁 {project.name}
-                </li>
-              </Link>
+          <h3 className="text-sm font-semibold text-gray-600 mb-1">Projects</h3>
+          <ul className="space-y-1 mb-3">
+            {roots.map((p) => (
+              <SidebarProject key={p.id} project={p} level={0} />
             ))}
           </ul>
-
-          {/* Add Project Input */}
-          <form onSubmit={handleAddProject} className="flex items-center gap-2">
+          <form onSubmit={handleAdd} className="flex gap-2">
             <input
-              className="border px-2 py-1 rounded text-sm w-full"
+              className="flex-1 border px-2 py-1 rounded text-sm"
               placeholder="New Project"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
             <button type="submit" className="text-blue-500">
               <PlusIcon className="w-4 h-4" />
             </button>
           </form>
         </div>
-      </aside>
+      </nav>
     </>
   );
 }
