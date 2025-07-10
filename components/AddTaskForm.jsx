@@ -3,7 +3,7 @@
 import { useTodoStore } from '@/lib/store';
 import React, { useState } from 'react';
 
-function AddTaskForm({ parentId = null }) {
+function AddTaskForm({ parentId = null, projectId = null }) {
   const [text, setText] = useState('');
   const [dueDate, setDueDate] = useState('');
   const addTodo = useTodoStore((state) => state.addTodo);
@@ -26,7 +26,7 @@ function AddTaskForm({ parentId = null }) {
       finalDate = new Date(now.getTime() + 60 * 60 * 1000).toISOString(); // default: +1 hour
     }
 
-    await addTodo(text.trim(), finalDate, parentId);
+    await addTodo(text.trim(), finalDate, parentId, projectId);
 
     setText('');
     setDueDate('');

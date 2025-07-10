@@ -1,6 +1,7 @@
+// app/auth/page.js
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAuth,
@@ -15,6 +16,41 @@ import { app } from '@/lib/firebase';
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
+function FormInput(props) {
+  return (
+    <input
+      className="w-full border px-3 py-2 rounded mb-4 focus:ring focus:ring-blue-200"
+      {...props}
+    />
+  );
+}
+
+function FormButton({ loading, children, ...props }) {
+  return (
+    <button
+      disabled={loading}
+      className={`w-full py-2 rounded transition ${
+        loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+      }`}
+      {...props}
+    >
+      {loading ? 'Please wait…' : children}
+    </button>
+  );
+}
+
+function SocialLogin({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-center mt-3 border border-gray-300 rounded py-2 hover:bg-gray-50 transition"
+    >
+      <img src="/google-icon.svg" alt="" className="h-5 mr-2" />
+      Continue with Google
+    </button>
+  );
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -24,6 +60,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -32,68 +69,89 @@ export default function AuthPage() {
   }, [user, router]);
 
   const handleAuth = async () => {
+    if (!email || !password) {
+      setError('Email and password are required.');
+      return;
+    }
+    setError('');
+    setIsSubmitting(true);
     try {
-      setError('');
+      let res;
       if (isLogin) {
-        const res = await signInWithEmailAndPassword(auth, email, password);
-        setUser(res.user);
+        res = await signInWithEmailAndPassword(auth, email, password);
       } else {
-        const res = await createUserWithEmailAndPassword(auth, email, password);
-        setUser(res.user);
+        res = await createUserWithEmailAndPassword(auth, email, password);
       }
+      setUser(res.user);
     } catch (err) {
-      setError(err.message);
+      const code = err.code || err.message || '';
+      if (code.includes('user-not-found')) {
+        setError('No account with that email.');
+      } else if (code.includes('wrong-password')) {
+        setError('Incorrect password.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    setError('');
+    setIsSubmitting(true);
     try {
       const result = await signInWithPopup(auth, provider);
       setUser(result.user);
     } catch (err) {
-      setError(err.message);
+      setError('Google sign‑in failed.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white p-6 rounded shadow w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg max-w-md w-full">
+        <img src="/logo.svg" alt="MyApp Logo" className="h-12 mx-auto mb-6" />
         <h2 className="text-2xl font-semibold text-center mb-4">{isLogin ? 'Login' : 'Sign Up'}</h2>
 
-        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+        {error && (
+          <p aria-live="assertive" className="text-red-500 text-sm mb-4">
+            {error}
+          </p>
+        )}
 
-        <input
+        <label htmlFor="email" className="sr-only">
+          Email address
+        </label>
+        <FormInput
+          id="email"
           type="email"
           placeholder="Email"
-          className="w-full border px-3 py-2 rounded mb-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <input
+        <label htmlFor="password" className="sr-only">
+          Password
+        </label>
+        <FormInput
+          id="password"
           type="password"
           placeholder="Password"
-          className="w-full border px-3 py-2 rounded mb-3"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-          onClick={handleAuth}
-        >
+        <FormButton loading={isSubmitting} onClick={handleAuth}>
           {isLogin ? 'Login' : 'Sign Up'}
-        </button>
+        </FormButton>
 
-        <button
-          className="w-full mt-3 bg-red-500 text-white py-2 rounded hover:bg-red-600 transition"
-          onClick={handleGoogleLogin}
-        >
-          Continue with Google
-        </button>
+        <SocialLogin onClick={handleGoogleLogin} />
 
-        <p className="text-center text-sm mt-4">
-          {isLogin ? 'Don’t have an account?' : 'Already have an account?'}{' '}
+        <p className="text-center text-sm mt-6">
+          {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
           <span
             onClick={() => setIsLogin(!isLogin)}
             className="text-blue-600 cursor-pointer underline"

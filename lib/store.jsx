@@ -39,7 +39,7 @@ export const useTodoStore = create((set, get) => ({
   },
 
   // Todos CRUD
-  addTodo: async (text, dueDate = null, parentId = null, projectId = null) => {
+  addTodo: async (text, dueDate = null, parentId = null, projectId = null, completed = false) => {
     const user = useAuthStore.getState().user;
     if (!user) return;
 

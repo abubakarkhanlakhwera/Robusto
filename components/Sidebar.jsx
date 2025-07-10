@@ -42,12 +42,12 @@ export default function Sidebar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    await addProject(name.trim());
-    setName('');
-  };
+  // const handleAdd = async (e) => {
+  //   e.preventDefault();
+  //   if (!name.trim()) return;
+  //   await addProject(name.trim());
+  //   setName('');
+  // };
 
   return (
     <>
@@ -91,7 +91,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        <div>
+        {/* <div>
           <h3 className="text-sm font-semibold text-gray-600 mb-1">Projects</h3>
           <ul className="space-y-1 mb-3">
             {roots.map((p) => (
@@ -109,7 +109,7 @@ export default function Sidebar() {
               <PlusIcon className="w-4 h-4" />
             </button>
           </form>
-        </div>
+        </div> */}
       </nav>
     </>
   );
