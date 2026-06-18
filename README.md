@@ -1,26 +1,30 @@
-# 📝 Todoist Clone (Next.js + Zustand)
+# Robusto Task Manager
 
-A responsive, full-featured task manager inspired by Todoist — built using:
+A Todoist-inspired task manager built with Next.js, Tailwind CSS, and Zustand.
 
-- 🔥 Next.js (App Router)
-- 🎨 Tailwind CSS
-- 🧠 Zustand (Global State)
-- 🛎 Notifications API
-- ⏰ Smart timers & expiry handling
-- 📁 Projects & filters
+## Purpose
 
-### 🚀 Features
+Task managers are useful for practicing real product behavior: projects, filters, subtasks, persistence, and reminders. This repository demonstrates a more complete frontend app rather than a tiny exercise.
 
-✅ Inbox, Today, Upcoming filters  
-✅ Subtasks & hierarchies  
-✅ Notifications before expiry  
-✅ Projects (create, edit, delete)  
-✅ LocalStorage persistence  
-✅ Responsive UI
+## What This Shows
 
-### 📦 Getting Started
+- Task/project organization flow
+- Zustand state management
+- Responsive Next.js UI
 
-```bash
-npm install
-npm run dev
-```
+## Stack
+
+- Next.js
+- Tailwind CSS
+- Zustand
+- JavaScript
+
+## Next Improvements
+
+- Add screenshots
+- Document state model
+- Add deployment link if live
+
+## Author
+
+Abubakar Khan Lakhwera
